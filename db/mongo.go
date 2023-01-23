@@ -88,7 +88,7 @@ func GetAll(collection *mongo.Collection) string {
 	return string(out)
 }
 
-func UpdateItem(collection *mongo.Collection, realintid int, c echo.Context) {
+func UpdateItem(collection *mongo.Collection, realintid int, c echo.Context) string {
 	filterUpdate := bson.D{{Key: "id", Value: realintid}}
 
 	update := bson.D{
@@ -107,13 +107,30 @@ func UpdateItem(collection *mongo.Collection, realintid int, c echo.Context) {
 	checkErr(err)
 
 	fmt.Printf("Matched %v documents and updated %v documents.\n", updateResult.MatchedCount, updateResult.ModifiedCount)
+	if updateResult.MatchedCount == 0 {
+		return "ERR NO DOCUMENT(s)"
+	}
+	return "success"
 }
 
-func MakeItem(collection *mongo.Collection, c echo.Context) {
+func MakeItem(collection *mongo.Collection, c echo.Context) string {
 	realintid, errs := strconv.Atoi(c.FormValue("id"))
 	checkErr(errs)
-	ash := ListContent{c.FormValue("title"), c.FormValue("details"), c.FormValue("successdetails"), c.FormValue("successimage"), c.FormValue("category"), c.FormValue("success"), c.FormValue("date"), c.FormValue("image"), realintid}
 
-	_, err := collection.InsertOne(context.TODO(), ash)
-	checkErr(err)
+	filterCheck := bson.D{{Key: "id", Value: realintid}}
+
+	var result ListContent
+	checkedErr := collection.FindOne(context.TODO(), filterCheck).Decode(&result)
+
+	if checkedErr != nil {
+		if checkedErr == mongo.ErrNoDocuments {
+			ash := ListContent{c.FormValue("title"), c.FormValue("details"), c.FormValue("successdetails"), c.FormValue("successimage"), c.FormValue("category"), c.FormValue("success"), c.FormValue("date"), c.FormValue("image"), realintid}
+
+			_, err := collection.InsertOne(context.TODO(), ash)
+			checkErr(err)
+			return "success"
+		}
+		panic(checkedErr)
+	}
+	return "DOCUMENT(s) ALEADY"
 }

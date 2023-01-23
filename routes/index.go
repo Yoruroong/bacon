@@ -38,9 +38,9 @@ func UpdateItem(c echo.Context) error {
 	realintid, errs := strconv.Atoi(c.FormValue("id"))
 	checkErr(errs)
 
-	db.UpdateItem(collection, realintid, c)
+	resultstr := db.UpdateItem(collection, realintid, c)
 
-	return c.String(http.StatusOK, "success")
+	return c.String(http.StatusOK, resultstr)
 }
 
 func MakeItem(c echo.Context) error {
@@ -52,7 +52,7 @@ func MakeItem(c echo.Context) error {
 	if len(c.FormValue("id")) < 1 {
 		return c.String(http.StatusTeapot, "Insert ID")
 	}
-	db.MakeItem(collection, c)
+	resultstr := db.MakeItem(collection, c)
 
-	return c.String(http.StatusOK, "success")
+	return c.String(http.StatusOK, resultstr)
 }
