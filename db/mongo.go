@@ -5,10 +5,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 
+	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+)
+
+type (
+	DbContext struct {
+		echo.Context
+		Collection *mongo.Collection
+	}
 )
 
 type ListContent struct {
@@ -22,6 +31,12 @@ type ListContent struct {
 	Date           string
 	Image          string
 	Id             int
+}
+
+func checkErr(er error) {
+	if er != nil {
+		log.Fatal(er)
+	}
 }
 
 func Connect(mongoSetting string) *mongo.Collection {
@@ -71,4 +86,34 @@ func GetAll(collection *mongo.Collection) string {
 		panic(err)
 	}
 	return string(out)
+}
+
+func UpdateItem(collection *mongo.Collection, realintid int, c echo.Context) {
+	filterUpdate := bson.D{{Key: "id", Value: realintid}}
+
+	update := bson.D{
+		{Key: "$set", Value: bson.D{
+			{Key: "successdetails", Value: c.FormValue("successdetails")},
+			{Key: "title", Value: c.FormValue("title")},
+			{Key: "details", Value: c.FormValue("details")},
+			{Key: "successimage", Value: c.FormValue("successimage")},
+			{Key: "category", Value: c.FormValue("category")},
+			{Key: "success", Value: c.FormValue("success")},
+			{Key: "date", Value: c.FormValue("date")},
+			{Key: "image", Value: c.FormValue("image")},
+		}},
+	}
+	updateResult, err := collection.UpdateOne(context.TODO(), filterUpdate, update)
+	checkErr(err)
+
+	fmt.Printf("Matched %v documents and updated %v documents.\n", updateResult.MatchedCount, updateResult.ModifiedCount)
+}
+
+func MakeItem(collection *mongo.Collection, c echo.Context) {
+	realintid, errs := strconv.Atoi(c.FormValue("id"))
+	checkErr(errs)
+	ash := ListContent{c.FormValue("title"), c.FormValue("details"), c.FormValue("successdetails"), c.FormValue("successimage"), c.FormValue("category"), c.FormValue("success"), c.FormValue("date"), c.FormValue("image"), realintid}
+
+	_, err := collection.InsertOne(context.TODO(), ash)
+	checkErr(err)
 }
